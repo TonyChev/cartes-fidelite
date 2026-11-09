@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1318" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Fidélité">
+  <title>Portefeuille Fidélité</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="css/style.css?v=1">
+</head>
+<body>
+  <!-- Écran de démarrage -->
+  <div class="boot" id="boot"><img src="icon.svg" alt="" width="56" height="56"></div>
+
+  <!-- Connexion -->
+  <main class="auth" id="auth" hidden>
+    <div class="auth-box">
+      <img src="icon.svg" alt="" width="52" height="52">
+      <h1>Portefeuille Fidélité</h1>
+      <p class="sub" id="auth-intro">Connectez-vous pour retrouver vos cartes sur tous vos appareils.</p>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-login" aria-selected="true">Se connecter</button>
+        <button type="button" role="tab" id="tab-signup" aria-selected="false">Créer un compte</button>
+      </div>
+      <form id="auth-form" novalidate>
+        <label>Adresse email
+          <input id="a-email" type="email" autocomplete="email" inputmode="email" required placeholder="vous@exemple.fr">
+        </label>
+        <label id="pw-label">Mot de passe
+          <input id="a-pass" type="password" autocomplete="current-password" required minlength="6" placeholder="6 caractères minimum">
+        </label>
+        <p class="msg" id="auth-msg" hidden></p>
+        <button class="btn primary big" type="submit" id="auth-submit">Se connecter</button>
+        <button class="link" type="button" id="forgot">Mot de passe oublié ?</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Application -->
+  <div class="wrap" id="app" hidden>
+    <header>
+      <div>
+        <h1>Portefeuille Fidélité</h1>
+        <div class="sub" id="count"></div>
+      </div>
+      <div class="head-actions">
+        <button class="btn primary" id="add-btn" type="button">+ Ajouter une carte</button>
+        <button class="btn ghost" id="account-btn" type="button" aria-label="Mon compte">Compte</button>
+      </div>
+    </header>
+    <div class="toolbar" id="toolbar" hidden>
+      <input class="search" id="search" type="search" placeholder="Rechercher une enseigne…" autocomplete="off" aria-label="Rechercher une carte">
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden>
+      <strong>Aucune carte pour l'instant</strong>
+      <div>Ajoutez votre première carte : Leclerc Drive, Chronodrive, Carrefour, Décathlon…<br>Scannez son code-barres avec la caméra ou saisissez le numéro.</div>
+      <button class="btn primary" id="empty-add" type="button">+ Ajouter une carte</button>
+    </div>
+    <div class="status" id="net-status"></div>
+  </div>
+
+  <!-- Affichage d'une carte -->
+  <div class="scrim" id="show" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="show-name">
+      <div class="sheet-head">
+        <h2 id="show-name"></h2>
+        <button class="x" type="button" data-close aria-label="Fermer">×</button>
+      </div>
+      <div class="code-box" id="show-code"></div>
+      <div class="hint">Montez la luminosité de l'écran pour faciliter le scan en caisse.</div>
+      <div class="row">
+        <button class="btn" id="copy-btn" type="button">Copier le numéro</button>
+        <button class="btn" id="edit-btn" type="button">Modifier</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ajout / modification -->
+  <div class="scrim" id="editor" hidden>
+    <form class="sheet" id="form" role="dialog" aria-modal="true" aria-labelledby="form-title" novalidate>
+      <div class="sheet-head">
+        <h2 id="form-title">Nouvelle carte</h2>
+        <button class="x" type="button" data-close aria-label="Fermer">×</button>
+      </div>
+      <div class="scanline">
+        <button class="btn" type="button" id="cam-btn">Scanner avec la caméra</button>
+        <label class="btn" for="f-photo">Depuis une photo</label>
+        <input id="f-photo" type="file" accept="image/*" hidden>
+      </div>
+      <p class="msg" id="scan-msg">Visez le code-barres de la carte : le numéro se remplit tout seul.</p>
+      <div class="cam" id="cam" hidden>
+        <video id="cam-video" playsinline muted></video>
+        <div class="cam-frame"></div>
+        <button class="btn" type="button" id="cam-stop">Arrêter la caméra</button>
+      </div>
+      <label>Enseigne
+        <input id="f-name" type="text" placeholder="ex. Leclerc Drive" required autocomplete="off" list="brands">
+        <datalist id="brands">
+          <option value="Leclerc Drive"></option><option value="Chronodrive"></option><option value="Carrefour"></option>
+          <option value="Auchan"></option><option value="Intermarché"></option><option value="Super U"></option>
+          <option value="Lidl Plus"></option><option value="Monoprix"></option><option value="Casino"></option>
+          <option value="Décathlon"></option><option value="Fnac"></option><option value="Ikea Family"></option>
+          <option value="Leroy Merlin"></option><option value="Sephora"></option><option value="Picard"></option>
+        </datalist>
+      </label>
+      <label>Numéro de carte
+        <input id="f-number" type="text" placeholder="ex. 3560070123452" required autocomplete="off">
+      </label>
+      <label>Type de code
+        <select id="f-format">
+          <option value="auto">Automatique</option>
+          <option value="EAN13">EAN-13 (13 chiffres)</option>
+          <option value="EAN8">EAN-8 (8 chiffres)</option>
+          <option value="CODE128">Code 128</option>
+          <option value="CODE39">Code 39</option>
+          <option value="UPC">UPC-A</option>
+          <option value="ITF">ITF</option>
+          <option value="QR">QR code</option>
+          <option value="NONE">Numéro seul, sans code</option>
+        </select>
+      </label>
+      <label>Note <span class="opt">(facultatif)</span>
+        <input id="f-note" type="text" placeholder="ex. carte de Julie" autocomplete="off">
+      </label>
+      <div class="field">
+        <span class="field-label">Couleur</span>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Aperçu du code</span>
+        <div class="code-box small" id="preview"></div>
+      </div>
+      <p class="msg err" id="form-err" hidden></p>
+      <button class="btn primary big" type="submit" id="save-btn">Enregistrer</button>
+      <div id="delete-zone" hidden>
+        <button class="btn danger full" type="button" id="del-btn">Supprimer cette carte</button>
+        <div class="confirm" id="del-confirm" hidden>
+          <span>Supprimer définitivement cette carte ?</span>
+          <div class="row">
+            <button class="btn" type="button" id="del-cancel">Annuler</button>
+            <button class="btn danger solid" type="button" id="del-ok">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Compte -->
+  <div class="scrim" id="account" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="acc-title">
+      <div class="sheet-head">
+        <h2 id="acc-title">Mon compte</h2>
+        <button class="x" type="button" data-close aria-label="Fermer">×</button>
+      </div>
+      <p>Connecté avec <strong id="acc-email"></strong></p>
+      <button class="btn" type="button" id="acc-reset">Changer de mot de passe (email)</button>
+      <button class="btn danger" type="button" id="logout-btn">Se déconnecter</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js" defer></script>
+  <script type="module" src="js/app.js?v=1"></script>
+</body>
+</html>
