@@ -1,6 +1,6 @@
 // Service worker : l'appli s'ouvre même sans réseau (les cartes viennent du cache Firestore).
-const CACHE = "fidelite-v2";
-const SHELL = ["./", "index.html", "css/style.css?v=2", "js/app.js?v=2", "js/firebase-config.js?v=1", "icon.svg", "manifest.webmanifest"];
+const CACHE = "fidelite-v3";
+const SHELL = ["./", "index.html", "css/style.css?v=3", "js/app.js?v=3", "js/firebase-config.js?v=1", "icon.svg", "manifest.webmanifest"];
 const CDN = ["cdn.jsdelivr.net", "www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (e) => {

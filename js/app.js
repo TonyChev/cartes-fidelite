@@ -159,14 +159,47 @@ function textOn(hex) {
 const maskNum = (n) => (n.length > 4 ? "•••• " + n.slice(-4) : n);
 
 /* ================================================================ Affichage */
+// Ordre choisi par glisser-déposer (champ "order"), sinon dernière utilisation.
+function sortCards(list) {
+  return list.slice().sort((a, b) => {
+    const ao = typeof a.order === "number", bo = typeof b.order === "number";
+    if (ao && bo) return a.order - b.order;
+    if (ao !== bo) return ao ? 1 : -1; // les cartes sans ordre (nouvelles) passent devant
+    return (b.usedAt || b.createdAt || 0) - (a.usedAt || a.createdAt || 0);
+  });
+}
+let dragging = false, pendingRender = false, sortable = null, lastDragEnd = 0;
+function setupSortable() {
+  if (sortable || !window.Sortable) return;
+  sortable = window.Sortable.create($("grid"), {
+    animation: 160,
+    delay: 220, delayOnTouchOnly: true, touchStartThreshold: 6,
+    ghostClass: "drag-ghost", chosenClass: "drag-chosen",
+    onStart() { dragging = true; $("grid").classList.add("sorting"); },
+    onEnd(evt) {
+      dragging = false; lastDragEnd = Date.now(); $("grid").classList.remove("sorting");
+      if (evt.oldIndex !== evt.newIndex) saveOrder([...$("grid").children].map((el) => el.dataset.id));
+      if (pendingRender) { pendingRender = false; render(); }
+    },
+  });
+}
+function saveOrder(ids) {
+  const batch = fb.fs.writeBatch(fb.db);
+  ids.forEach((id, i) => {
+    const c = cards.find((x) => x.id === id);
+    if (c && c.order !== i) { c.order = i; batch.update(fb.fs.doc(cardsCol(), id), { order: i }); }
+  });
+  batch.commit().catch(() => toast("Le nouvel ordre n'a pas pu être enregistré"));
+}
 function render() {
   const q = $("search").value.trim().toLowerCase();
-  const sorted = cards.slice().sort((a, b) => (b.usedAt || b.createdAt || 0) - (a.usedAt || a.createdAt || 0));
+  if (dragging) { pendingRender = true; return; }
+  const sorted = sortCards(cards);
   const shown = q ? sorted.filter((c) => (c.name + " " + (c.note || "")).toLowerCase().includes(q)) : sorted;
   const grid = $("grid"); grid.textContent = "";
   for (const c of shown) {
     const color = c.color || COLORS[0];
-    const b = document.createElement("button"); b.type = "button"; b.className = "card";
+    const b = document.createElement("button"); b.type = "button"; b.className = "card"; b.dataset.id = c.id;
     b.style.setProperty("--c", color); b.style.setProperty("--t", textOn(color));
     b.setAttribute("aria-label", "Afficher la carte " + c.name);
     const top = document.createElement("div"); top.className = "top";
@@ -176,13 +209,15 @@ function render() {
     const num = document.createElement("span"); num.className = "num"; num.textContent = maskNum(c.number);
     const chip = document.createElement("span"); chip.className = "chip";
     bottom.append(num, chip); b.append(top, bottom);
-    b.addEventListener("click", () => openShow(c.id));
+    b.addEventListener("click", () => { if (Date.now() - lastDragEnd > 350) openShow(c.id); });
     grid.appendChild(b);
   }
   const n = cards.length;
-  $("count").textContent = n === 0 ? "Vos cartes de magasin, toujours sur vous." : n + (n > 1 ? " cartes" : " carte") + " · triées par dernière utilisation";
+  $("count").textContent = n === 0 ? "Vos cartes de magasin, toujours sur vous." : n + (n > 1 ? " cartes" : " carte") + (n > 1 ? " · maintenez une carte pour la déplacer" : "");
   $("empty").hidden = n !== 0;
   $("toolbar").hidden = n < 4;
+  setupSortable();
+  if (sortable) sortable.option("disabled", Boolean(q)); // pas de déplacement pendant une recherche
 }
 $("search").addEventListener("input", render);
 
@@ -270,6 +305,9 @@ $("form").addEventListener("submit", async (e) => {
     name, number, format: $("f-format").value, note: $("f-note").value.trim(), color: chosenColor,
     createdAt: prev?.createdAt || Date.now(), usedAt: prev?.usedAt || Date.now(),
   };
+  const orders = cards.map((c) => c.order).filter((o) => typeof o === "number");
+  if (prev && typeof prev.order === "number") data.order = prev.order;
+  else if (orders.length) data.order = Math.min(...orders) - 1; // nouvelle carte en tête
   // Hors ligne, l'écriture est mise en file et part au retour du réseau : on n'attend pas.
   saveCard(id, data).catch(() => toast("L'enregistrement a échoué. Vérifiez votre connexion."));
   closeAll();
