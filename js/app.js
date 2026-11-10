@@ -169,7 +169,7 @@ function render() {
     const b = document.createElement("button"); b.type = "button"; b.className = "card";
     b.style.setProperty("--c", color); b.style.setProperty("--t", textOn(color));
     b.setAttribute("aria-label", "Afficher la carte " + c.name);
-    const top = document.createElement("div");
+    const top = document.createElement("div"); top.className = "top";
     const nm = document.createElement("div"); nm.className = "name"; nm.textContent = c.name; top.appendChild(nm);
     if (c.note) { const nt = document.createElement("div"); nt.className = "note"; nt.textContent = c.note; top.appendChild(nt); }
     const bottom = document.createElement("div"); bottom.className = "bottom";
