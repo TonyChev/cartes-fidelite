@@ -149,7 +149,8 @@ function renderCode(box, num, fmt, big) {
     s.textContent = "Ce numéro ne correspond pas au type " + f + ". Choisissez « Automatique » ou « Code 128 ».";
     box.appendChild(s);
   }
-  if (big || f === "NONE") { const n = document.createElement("div"); n.className = "code-num"; n.textContent = num; box.appendChild(n); }
+  // Pas de texte sous un QR code (son contenu est souvent long et illisible) ; le bouton Copier reste disponible.
+  if ((big && f !== "QR") || f === "NONE") { const n = document.createElement("div"); n.className = "code-num"; n.textContent = num; box.appendChild(n); }
 }
 function textOn(hex) {
   const h = hex.replace("#", "");
